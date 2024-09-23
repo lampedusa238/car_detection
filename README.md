@@ -39,11 +39,29 @@
    
 ### Использование
 
-Для обнаружения автомобилей на видео, необходимо указать путь для видео в `main.py`:
-   ```Python
-   if __name__ == '__main__':
-       video_path = '{YOUR VIDEO PATH}'
-       detect_cars(video_path)
+Для запуска скрипта с помощью Poetry используйте команду:
+   ```bash
+   poetry run python main.py 
    ```
 
-При плохом обнаружении движущихся автомобилей можно изменить параметр `motion_magnitude` или использовать это более точную модель YOLOv8 (например, yolov8m.pt).
+Для обнаружения автомобилей на видео, достаточно указать только входной путь для видео в `main.py`:
+```Python
+if __name__ == '__main__':
+   input_video_path = 'YOUR_INPUT_VIDEO_PATH'
+   detect_cars('input_video_path',
+               {output_path = 'YOUR_OUTPUT_VIDEO_PATH'},
+               {skip_frames = 0},
+               {scale_percent = 0.5}, 
+               {show_frames = True}, 
+               {motion_threshold = 1.2})
+```
+
+Однако, также можно указать следующие параметры:
+- output_path (`string`, default: None) — путь для созранения выходного видеофайла в формате mp4 (например, `output_video.mp4`)
+- skip_frames (`int`, default: 0) — номер кадра который будем пропускать (например 0 - ничего не пропускаем, 1 - пропускаем все, 2 - пропускаем кадый 2 кадр, 3 - пропускаем каждый 3-ий кадр и тд)
+- scale_percent (`float`, default: 0.5) — масштаб изображения для ускорения работы (1 - 100%, 0.5 - 50% и тд)
+- show_frames (`boolean`, default: True) — отображать ли предпросмотр разметки
+- motion_threshold (`float`, default:1.2) — пороговое значение для определения движения
+
+
+При плохом обнаружении движущихся автомобилей можно изменить параметры skip_frames, scale_percent, motion_threshold или использовать более точную модель YOLOv8 (например, yolov8m.pt).
