@@ -48,8 +48,14 @@
 ```Python
 if __name__ == '__main__':
    input_video_path = 'YOUR_INPUT_VIDEO_PATH'
-   detect_cars('input_video_path', {output_path='YOUR_OUTPUT_VIDEO_PATH'}, {skip_frames=0}, {scale_percent=0.5}, {show_frames=True}, {motion_threshold=1.2})
+   detect_cars('input_video_path',
+               {output_path = 'YOUR_OUTPUT_VIDEO_PATH'},
+               {skip_frames = 0},
+               {scale_percent = 0.5}, 
+               {show_frames = True}, 
+               {motion_threshold = 1.2})
 ```
+
 Однако, также можно указать следующие параметры:
 - output_path (`string`, default: None) — путь для созранения выходного видеофайла в формате mp4 (например, `output_video.mp4`)
 - skip_frames (`int`, default: 0) — номер кадра который будем пропускать (например 0 - ничего не пропускаем, 1 - пропускаем все, 2 - пропускаем кадый 2 кадр, 3 - пропускаем каждый 3-ий кадр и тд)
