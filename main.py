@@ -138,5 +138,5 @@ def detect_cars(input_path, output_path=None, skip_frames=0, scale_percent=0.5, 
 
 if __name__ == '__main__':
     video_input_path = 'data/traffic_videos/video1.mp4'
-    video_output_path = 'data/output_videos/video1_output1_v2.mp4'
+    video_output_path = 'data/output_videos/video1.mp4'
     detect_cars(video_input_path)
