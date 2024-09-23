@@ -41,8 +41,8 @@ def add_text_to_image(image, text, position, color):
 
 
 # Функция для обнаружения автомобилей
-def detect_cars(video_path, skip_frames=0, scale_percent=0.5):
-    cap = cv2.VideoCapture(video_path)
+def detect_cars(input_path, output_path=None, skip_frames=0, scale_percent=0.5, show_frames=True, motion_threshold=1.2):
+    cap = cv2.VideoCapture(input_path)
     if not cap.isOpened():
         print("Ошибка при открытии видеофайла")
         return
@@ -59,6 +59,12 @@ def detect_cars(video_path, skip_frames=0, scale_percent=0.5):
     height = int(frame2.shape[0] * scale_percent)
     dim = (width, height)
     frame2_resized = cv2.resize(frame2, dim, interpolation=cv2.INTER_AREA)
+
+    if output_path is not None:
+        # Инициалзиция VideoWriter для записи результата работы
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        output_video = cv2.VideoWriter(output_path, fourcc, fps, (frame2_resized.shape[1], frame2_resized.shape[0]))
 
     while cap.isOpened():
         frame_count += 1
@@ -99,7 +105,7 @@ def detect_cars(video_path, skip_frames=0, scale_percent=0.5):
                     motion_magnitude = np.linalg.norm(motion)
 
                     # Определение, движется ли объект
-                    if motion_magnitude > 1.2:  # Порог для определения движения
+                    if motion_magnitude > motion_threshold:  # Порог для определения движения
                         color = (0, 255, 0)  # Зеленый цвет рамки для движущихся машин
                         direction = determine_direction(motion)
                         print(
@@ -112,17 +118,25 @@ def detect_cars(video_path, skip_frames=0, scale_percent=0.5):
                     # Добавление рамки
                     cv2.rectangle(frame2_resized, (x1, y1), (x2, y2), color, 2)
 
-        # Отображение кадра
-        cv2.imshow("frame", frame2_resized)
+        if output_path is not None:
+            # Записываем текущий кадр в видеофайл MP4
+            output_video.write(frame2_resized)
 
-        # Прерывание программы по нажатию Esc
-        if cv2.waitKey(40) == 27:
-            break
+        # Отображение кадра
+        if show_frames:
+            cv2.imshow("frame", frame2_resized)
+
+            # Прерывание программы по нажатию Esc
+            if cv2.waitKey(40) == 27:
+                break
 
     cap.release()
+    if output_path is not None:
+        output_video.release()
     cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
     video_input_path = 'data/traffic_videos/video1.mp4'
+    video_output_path = 'data/output_videos/video1_output1_v2.mp4'
     detect_cars(video_input_path)
