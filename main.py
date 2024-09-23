@@ -1,8 +1,23 @@
 import cv2
+import numpy as np
 from ultralytics import YOLO
 
 # Загрузка модели YOLOv8
 model = YOLO('models/yolov8s.pt')
+
+
+# Функция для определения направления движения
+def determine_direction(motion):
+    if motion[0] > 0 and abs(motion[0]) > abs(motion[1]):
+        return "Вправо"
+    elif motion[0] < 0 and abs(motion[0]) > abs(motion[1]):
+        return "Влево"
+    elif motion[1] > 0 and abs(motion[1]) > abs(motion[0]):
+        return "Вниз"
+    elif motion[1] < 0 and abs(motion[1]) > abs(motion[0]):
+        return "Вверх"
+    else:
+        return "Не определено"
 
 
 # Функция для обнаружения автомобилей
@@ -12,22 +27,30 @@ def detect_cars(video_path):
         print("Ошибка при открытии видеофайла")
         return
 
+    ret, frame2 = cap.read()
+    if not ret:
+        print("Ошибка при чтении первого кадра")
+        return
+
     while cap.isOpened():
-        ret, frame = cap.read()
+        frame1 = frame2
+        ret, frame2 = cap.read()
+
+        # Проверка на наличие кадра
         if not ret:
             break
 
         # Уменьшение размера изображения
         scale_percent = 0.5  # Множитель уменьшения - 50%
-        width = int(frame.shape[1] * scale_percent)
-        height = int(frame.shape[0] * scale_percent)
+        width = int(frame1.shape[1] * scale_percent)
+        height = int(frame1.shape[0] * scale_percent)
         dim = (width, height)
-        frame_resized = cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
+        frame1_resized = cv2.resize(frame1, dim, interpolation=cv2.INTER_AREA)
+        frame2_resized = cv2.resize(frame2, dim, interpolation=cv2.INTER_AREA)
 
         # Обнаружение объектов с использованием YOLOv8
-        results = model(frame_resized)
+        results = model(frame1_resized)
 
-        # Анализ результатов
         for result in results:
             boxes = result.boxes
             for box in boxes:
@@ -36,12 +59,31 @@ def detect_cars(video_path):
                 confidence = float(box.conf[0])
 
                 if confidence > 0.5 and class_id == 2:  # 2 - класс автомобиля
-                    cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    print(f"Обнаружен автомобиль в координатах: ({x1}, {y1}) - ({x2}, {y2})")
+                    # Вычисление оптического потока только для области автомобиля
+                    gray1 = cv2.cvtColor(frame1_resized[y1:y2, x1:x2], cv2.COLOR_BGR2GRAY)
+                    gray2 = cv2.cvtColor(frame2_resized[y1:y2, x1:x2], cv2.COLOR_BGR2GRAY)
+                    flow = cv2.calcOpticalFlowFarneback(gray1, gray2, None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
-        cv2.imshow("frame", frame_resized)
+                    # Вычисление среднего движения в области объекта
+                    motion = np.mean(flow, axis=(0, 1))
+                    motion_magnitude = np.linalg.norm(motion)
 
-        # Остановка программы по нажатию Esc
+                    # Определение, движется ли объект
+                    if motion_magnitude > 1.0:  # Порог для определения движения
+                        color = (0, 255, 0)  # Зеленый цвет рамки для движущихся машин
+                        direction = determine_direction(motion)
+                        print(f"Обнаружен движущийся автомобиль в координатах: ({x1}, {y1}), направление: {direction}")
+                    else:
+                        color = (0, 0, 255)  # Зеленый цвет рамки для стоящих машин
+                        print(f"Обнаружен стоящий автомобиль в координатах: ({x1}, {y1})")
+
+                    # Добавление рамки
+                    cv2.rectangle(frame1_resized, (x1, y1), (x2, y2), color, 2)
+
+        # Отображение кадра
+        cv2.imshow("frame", frame1_resized)
+
+        # Прерывание программы по нажатию Esc
         if cv2.waitKey(40) == 27:
             break
 
