@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "car-detection"
+version = "0.1.0"
+description = "Detection of moving cars on video and the direction of their movement"
+authors = ["lampedusa238 <lampedusa238@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+opencv-python = "^4.10.0.84"
+opencv-contrib-python = "^4.10.0.84"
+ultralytics = "^8.2.97"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
