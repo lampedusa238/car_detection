@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 from ultralytics import YOLO
 
 # Загрузка модели YOLOv8
@@ -9,15 +10,34 @@ model = YOLO('models/yolov8s.pt')
 # Функция для определения направления движения
 def determine_direction(motion):
     if motion[0] > 0 and abs(motion[0]) > abs(motion[1]):
-        return "Вправо"
+        if motion[1] > 0:
+            return "Down-Right"
+        elif motion[1] < 0:
+            return "Up-Right"
+        else:
+            return "Right"
     elif motion[0] < 0 and abs(motion[0]) > abs(motion[1]):
-        return "Влево"
+        if motion[1] > 0:
+            return "Down-Left"
+        elif motion[1] < 0:
+            return "Up-Left"
+        else:
+            return "Left"
     elif motion[1] > 0 and abs(motion[1]) > abs(motion[0]):
-        return "Вниз"
+        return "Down"
     elif motion[1] < 0 and abs(motion[1]) > abs(motion[0]):
-        return "Вверх"
+        return "Up"
     else:
-        return "Не определено"
+        return "Not moving"
+
+
+# Функция для добавления текста на изображение
+def add_text_to_image(image, text, position, color):
+    pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    draw = ImageDraw.Draw(pil_image)
+    font = ImageFont.truetype("arial.ttf", 20)
+    draw.text(position, text, font=font, fill=color)
+    return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 
 
 # Функция для обнаружения автомобилей
@@ -72,10 +92,12 @@ def detect_cars(video_path):
                     if motion_magnitude > 1.0:  # Порог для определения движения
                         color = (0, 255, 0)  # Зеленый цвет рамки для движущихся машин
                         direction = determine_direction(motion)
-                        print(f"Обнаружен движущийся автомобиль в координатах: ({x1}, {y1}), направление: {direction}")
+                        print(
+                            f"Обнаружен движущийся автомобиль в координатах: ({x1}, {y1}) - ({x2}, {y2}), направление: {direction}")
+                        frame1_resized = add_text_to_image(frame1_resized, direction, (x1 + 5, y1 + 5), color)
                     else:
                         color = (0, 0, 255)  # Зеленый цвет рамки для стоящих машин
-                        print(f"Обнаружен стоящий автомобиль в координатах: ({x1}, {y1})")
+                        print(f"Обнаружен стоящий автомобиль в координатах: ({x1}, {y1}) - ({x2}, {y2})")
 
                     # Добавление рамки
                     cv2.rectangle(frame1_resized, (x1, y1), (x2, y2), color, 2)
