@@ -41,7 +41,7 @@ def add_text_to_image(image, text, position, color):
 
 
 # Функция для обнаружения автомобилей
-def detect_cars(video_path):
+def detect_cars(video_path, skip_frames=0, scale_percent=0.5):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         print("Ошибка при открытии видеофайла")
@@ -52,24 +52,34 @@ def detect_cars(video_path):
         print("Ошибка при чтении первого кадра")
         return
 
-    while cap.isOpened():
-        frame1 = frame2
-        ret, frame2 = cap.read()
+    frame_count = 0
 
+    # Уменьшение размера изображения
+    width = int(frame2.shape[1] * scale_percent)
+    height = int(frame2.shape[0] * scale_percent)
+    dim = (width, height)
+    frame2_resized = cv2.resize(frame2, dim, interpolation=cv2.INTER_AREA)
+
+    while cap.isOpened():
+        frame_count += 1
+
+        # Условие для пропуска кадров
+        if skip_frames > 0:
+            if frame_count % skip_frames != 0:
+                continue
+
+        frame1 = frame2
+        frame1_resized = frame2_resized
+
+        ret, frame2 = cap.read()
         # Проверка на наличие кадра
         if not ret:
             break
 
-        # Уменьшение размера изображения
-        scale_percent = 0.5  # Множитель уменьшения - 50%
-        width = int(frame1.shape[1] * scale_percent)
-        height = int(frame1.shape[0] * scale_percent)
-        dim = (width, height)
-        frame1_resized = cv2.resize(frame1, dim, interpolation=cv2.INTER_AREA)
         frame2_resized = cv2.resize(frame2, dim, interpolation=cv2.INTER_AREA)
 
         # Обнаружение объектов с использованием YOLOv8
-        results = model(frame1_resized)
+        results = model(frame2_resized)
 
         for result in results:
             boxes = result.boxes
@@ -89,21 +99,21 @@ def detect_cars(video_path):
                     motion_magnitude = np.linalg.norm(motion)
 
                     # Определение, движется ли объект
-                    if motion_magnitude > 1.0:  # Порог для определения движения
+                    if motion_magnitude > 1.2:  # Порог для определения движения
                         color = (0, 255, 0)  # Зеленый цвет рамки для движущихся машин
                         direction = determine_direction(motion)
                         print(
                             f"Обнаружен движущийся автомобиль в координатах: ({x1}, {y1}) - ({x2}, {y2}), направление: {direction}")
-                        frame1_resized = add_text_to_image(frame1_resized, direction, (x1 + 5, y1 + 5), color)
+                        frame2_resized = add_text_to_image(frame2_resized, direction, (x1 + 5, y1 + 5), color)
                     else:
                         color = (0, 0, 255)  # Зеленый цвет рамки для стоящих машин
-                        print(f"Обнаружен стоящий автомобиль в координатах: ({x1}, {y1}) - ({x2}, {y2})")
+                        # print(f"Обнаружен стоящий автомобиль в координатах: ({x1}, {y1}) - ({x2}, {y2})")
 
                     # Добавление рамки
-                    cv2.rectangle(frame1_resized, (x1, y1), (x2, y2), color, 2)
+                    cv2.rectangle(frame2_resized, (x1, y1), (x2, y2), color, 2)
 
         # Отображение кадра
-        cv2.imshow("frame", frame1_resized)
+        cv2.imshow("frame", frame2_resized)
 
         # Прерывание программы по нажатию Esc
         if cv2.waitKey(40) == 27:
@@ -114,5 +124,5 @@ def detect_cars(video_path):
 
 
 if __name__ == '__main__':
-    video_path = 'data/traffic_videos/video1.mp4'
-    detect_cars(video_path)
+    video_input_path = 'data/traffic_videos/video1.mp4'
+    detect_cars(video_input_path)
